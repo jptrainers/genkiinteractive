@@ -39,7 +39,6 @@ const Dialogue = () => {
       setIsPlaying(prev => ({ ...prev, [id]: false }));
       setPlayingAudio(prev => ({ ...prev, [id]: null }));
     } else {
-      // Stop any currently playing audio
       Object.values(playingAudio).forEach(audio => audio?.pause());
       setIsPlaying({});
       
@@ -70,6 +69,10 @@ const Dialogue = () => {
     return <div>Loading dialogue...</div>;
   }
 
+  // Find unique speakers
+  const speakers = dialogue ? Array.from(new Set(dialogue.map((d: DialogueContent) => d.speaker))) : [];
+  const [takeshi, mary] = speakers;
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -82,6 +85,43 @@ const Dialogue = () => {
       <ProgressBar value={1} max={5} />
 
       <Card className="overflow-hidden">
+        {/* Speakers Header */}
+        <div className="flex items-center justify-between border-b bg-muted/30 p-6">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-20 w-20 ring-2 ring-primary ring-offset-2">
+              <AvatarImage
+                src={dialogue?.find((d: DialogueContent) => d.speaker === takeshi)?.imageUrl}
+                alt={`${takeshi}'s profile`}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-primary/10">
+                <User2 className="h-10 w-10 text-primary" />
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="text-2xl font-semibold">{takeshi}</h2>
+              <p className="text-sm text-muted-foreground">Student</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <h2 className="text-2xl font-semibold">{mary}</h2>
+              <p className="text-sm text-muted-foreground">Exchange Student</p>
+            </div>
+            <Avatar className="h-20 w-20 ring-2 ring-primary ring-offset-2">
+              <AvatarImage
+                src={dialogue?.find((d: DialogueContent) => d.speaker === mary)?.imageUrl}
+                alt={`${mary}'s profile`}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-primary/10">
+                <User2 className="h-10 w-10 text-primary" />
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
+
         <div className="border-b bg-muted/50 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -133,9 +173,6 @@ const Dialogue = () => {
                       isMary(content.speaker) && "flex-row-reverse"
                     )}>
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {content.speaker}
-                        </p>
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
