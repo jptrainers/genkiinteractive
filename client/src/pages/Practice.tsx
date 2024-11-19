@@ -7,13 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/ProgressBar";
+import type { Lesson } from "@db/schema";
 
-interface Question {
-  id: number;
+interface Question extends Lesson {
   type: "multiple-choice" | "fill-in";
-  question: string;
   options?: string[];
-  correctAnswer: string;
 }
 
 const Practice = () => {
@@ -21,7 +19,7 @@ const Practice = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const { toast } = useToast();
 
-  const { data: questions, isLoading } = useQuery({
+  const { data: questions, isLoading } = useQuery<Question[]>({
     queryKey: ["lessons", "practice"],
     queryFn: async () => {
       const response = await fetch("/api/lessons/practice");
@@ -37,24 +35,26 @@ const Practice = () => {
         body: JSON.stringify({
           lessonId: data.questionId,
           completed: true,
-          score: data.answer === questions[currentQuestion].correctAnswer ? 1 : 0,
+          score: data.answer === questions?.[currentQuestion].translation ? 1 : 0,
         }),
       });
       return response.json();
     },
     onSuccess: () => {
+      if (!questions) return;
+      
       const isCorrect = 
-        answers[currentQuestion] === questions[currentQuestion].correctAnswer;
+        answers[currentQuestion] === questions[currentQuestion].translation;
       
       toast({
         title: isCorrect ? "Correct!" : "Incorrect",
         description: isCorrect 
           ? "Great job! Let's move to the next question."
-          : `The correct answer was: ${questions[currentQuestion].correctAnswer}`,
+          : `The correct answer was: ${questions[currentQuestion].translation}`,
         variant: isCorrect ? "default" : "destructive",
       });
 
-      if (currentQuestion < questions?.length - 1) {
+      if (currentQuestion < (questions?.length ?? 0) - 1) {
         setCurrentQuestion(currentQuestion + 1);
       }
     },
@@ -69,6 +69,8 @@ const Practice = () => {
       return;
     }
 
+    if (!questions) return;
+
     submitMutation.mutate({
       questionId: questions[currentQuestion].id,
       answer: answers[currentQuestion],
@@ -79,7 +81,11 @@ const Practice = () => {
     return <div>Loading practice questions...</div>;
   }
 
-  const question = questions[currentQuestion];
+  const question = questions?.[currentQuestion];
+
+  if (!question) {
+    return <div>No questions available.</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -92,20 +98,20 @@ const Practice = () => {
 
       <ProgressBar 
         value={currentQuestion + 1} 
-        max={questions?.length || 1} 
+        max={questions?.length ?? 1} 
       />
 
       <Card className="p-6">
-        <h2 className="mb-6 text-xl font-semibold">{question?.question}</h2>
+        <h2 className="mb-6 text-xl font-semibold">{question.content}</h2>
 
-        {question?.type === "multiple-choice" ? (
+        {question.type === "multiple-choice" ? (
           <RadioGroup
             onValueChange={(value) => 
               setAnswers({ ...answers, [currentQuestion]: value })
             }
             value={answers[currentQuestion]}
           >
-            {question.options?.map((option, index) => (
+            {question.options?.map((option: string, index: number) => (
               <div key={index} className="flex items-center space-x-2">
                 <RadioGroupItem value={option} id={`option-${index}`} />
                 <Label htmlFor={`option-${index}`}>{option}</Label>
@@ -131,7 +137,7 @@ const Practice = () => {
             Previous
           </Button>
           <Button onClick={handleSubmit}>
-            {currentQuestion === questions.length - 1 ? "Finish" : "Next"}
+            {currentQuestion === (questions?.length ?? 0) - 1 ? "Finish" : "Next"}
           </Button>
         </div>
       </Card>
