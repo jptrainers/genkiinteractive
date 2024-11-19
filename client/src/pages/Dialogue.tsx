@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import ProgressBar from "@/components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface DialogueContent {
   id: number;
@@ -61,6 +62,10 @@ const Dialogue = () => {
     }));
   };
 
+  const isMary = (speaker: string) => {
+    return speaker === "Mary" || speaker === "メアリー";
+  };
+
   if (isLoading) {
     return <div>Loading dialogue...</div>;
   }
@@ -91,78 +96,111 @@ const Dialogue = () => {
         </div>
 
         <div className="divide-y p-6">
-          {dialogue?.map((content: DialogueContent, index: number) => (
-            <div 
-              key={content.id}
-              className={cn(
-                "space-y-4 py-6",
-                index === 0 && "pt-0",
-                index === dialogue.length - 1 && "pb-0"
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <Avatar className="h-16 w-16 flex-shrink-0">
-                  <AvatarImage
-                    src={content.imageUrl}
-                    alt={`${content.speaker}'s profile`}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-primary/10">
-                    <User2 className="h-8 w-8 text-primary" />
-                  </AvatarFallback>
-                </Avatar>
+          <AnimatePresence>
+            {dialogue?.map((content: DialogueContent, index: number) => (
+              <motion.div
+                key={content.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className={cn(
+                  "space-y-4 py-6",
+                  index === 0 && "pt-0",
+                  index === dialogue.length - 1 && "pb-0"
+                )}
+              >
+                <div className={cn(
+                  "flex items-start gap-4",
+                  isMary(content.speaker) && "flex-row-reverse"
+                )}>
+                  <Avatar className="h-16 w-16 flex-shrink-0">
+                    <AvatarImage
+                      src={content.imageUrl}
+                      alt={`${content.speaker}'s profile`}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-primary/10">
+                      <User2 className="h-8 w-8 text-primary" />
+                    </AvatarFallback>
+                  </Avatar>
 
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {content.speaker}
-                      </p>
-                      <p className="text-2xl font-medium leading-relaxed">
-                        {content.content}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {content.furigana}
-                      </p>
+                  <div className={cn(
+                    "flex-1 space-y-2",
+                    isMary(content.speaker) && "text-right"
+                  )}>
+                    <div className={cn(
+                      "flex items-start justify-between gap-4",
+                      isMary(content.speaker) && "flex-row-reverse"
+                    )}>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {content.speaker}
+                        </p>
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-2xl font-medium leading-relaxed"
+                        >
+                          {content.content}
+                        </motion.p>
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.2 }}
+                          className="text-sm text-muted-foreground"
+                        >
+                          {content.furigana}
+                        </motion.p>
+                      </div>
+
+                      <Button
+                        size="lg"
+                        variant="secondary"
+                        className={cn(
+                          "h-14 w-14 rounded-full transition-all",
+                          isPlaying[content.id] && "bg-primary text-primary-foreground hover:bg-primary/90"
+                        )}
+                        onClick={() => handlePlayback(content.id, content.audioUrl)}
+                      >
+                        {isPlaying[content.id] ? (
+                          <Pause className="h-6 w-6" />
+                        ) : (
+                          <Play className="h-6 w-6" />
+                        )}
+                      </Button>
                     </div>
-
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      className={cn(
-                        "h-14 w-14 rounded-full transition-all",
-                        isPlaying[content.id] && "bg-primary text-primary-foreground hover:bg-primary/90"
-                      )}
-                      onClick={() => handlePlayback(content.id, content.audioUrl)}
-                    >
-                      {isPlaying[content.id] ? (
-                        <Pause className="h-6 w-6" />
-                      ) : (
-                        <Play className="h-6 w-6" />
-                      )}
-                    </Button>
-                  </div>
-                  
-                  {/* Translation toggle and text */}
-                  <div className="pt-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleTranslation(content.id)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {showTranslations[content.id] ? "Hide" : "Show"} Translation
-                    </Button>
-                    {showTranslations[content.id] && (
-                      <p className="mt-2 text-lg text-muted-foreground">
-                        {content.translation}
-                      </p>
-                    )}
+                    
+                    {/* Translation toggle and text */}
+                    <div className={cn(
+                      "pt-2",
+                      isMary(content.speaker) && "flex flex-col items-end"
+                    )}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleTranslation(content.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {showTranslations[content.id] ? "Hide" : "Show"} Translation
+                      </Button>
+                      <AnimatePresence>
+                        {showTranslations[content.id] && (
+                          <motion.p
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-2 text-lg text-muted-foreground"
+                          >
+                            {content.translation}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </Card>
 
