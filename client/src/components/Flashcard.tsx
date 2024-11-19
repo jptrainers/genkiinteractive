@@ -17,12 +17,25 @@ const Flashcard = ({ front, back, furigana }: FlashcardProps) => {
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={isFlipped ? "back" : "front"}
-          initial={{ rotateY: isFlipped ? -180 : 0, opacity: 0 }}
-          animate={{ rotateY: isFlipped ? 0 : 180, opacity: 1 }}
-          exit={{ rotateY: isFlipped ? 180 : -180, opacity: 0 }}
-          transition={{ duration: 0.4 }}
+          initial={{ 
+            opacity: 0,
+            rotateX: isFlipped ? 90 : -90
+          }}
+          animate={{ 
+            opacity: 1,
+            rotateX: 0
+          }}
+          exit={{ 
+            opacity: 0,
+            rotateX: isFlipped ? -90 : 90
+          }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
           onClick={() => setIsFlipped(!isFlipped)}
           className="absolute h-full w-full"
+          style={{ 
+            transformStyle: "preserve-3d",
+            backfaceVisibility: "hidden"
+          }}
         >
           <Card className="flex h-full flex-col items-center justify-center p-6">
             {isFlipped ? (
