@@ -1,14 +1,20 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Play, Pause, Volume2, Languages, User2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProgressBar from "@/components/ProgressBar";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Conversation, DialogueProgress } from "@db/schema";
 
 interface DialogueContent {
   id: number;
@@ -21,14 +27,60 @@ interface DialogueContent {
 }
 
 const Dialogue = () => {
+  const [currentConversation, setCurrentConversation] = useState<string>();
   const [playingAudio, setPlayingAudio] = useState<Record<number, HTMLAudioElement | null>>({});
   const [isPlaying, setIsPlaying] = useState<Record<number, boolean>>({});
   const [showTranslations, setShowTranslations] = useState<Record<number, boolean>>({});
+  const [practiceProgress, setPracticeProgress] = useState<Record<number, boolean>>({});
 
-  const { data: dialogue, isLoading } = useQuery<DialogueContent[]>({
-    queryKey: ["lessons", "dialogue"],
+  // Fetch available conversations
+  const { data: conversations } = useQuery<Conversation[]>({
+    queryKey: ["conversations"],
     queryFn: async () => {
-      const response = await fetch("/api/lessons/dialogue");
+      const response = await fetch("/api/conversations");
+      const data = await response.json();
+      if (data.length > 0 && !currentConversation) {
+        setCurrentConversation(data[0].id.toString());
+      }
+      return data;
+    },
+  });
+
+  // Fetch dialogue for selected conversation
+  const { data: dialogue, isLoading } = useQuery<DialogueContent[]>({
+    queryKey: ["conversations", currentConversation, "dialogue"],
+    queryFn: async () => {
+      if (!currentConversation) return [];
+      const response = await fetch(`/api/conversations/${currentConversation}/dialogue`);
+      return response.json();
+    },
+    enabled: !!currentConversation,
+  });
+
+  // Fetch user's dialogue progress
+  const { data: progress } = useQuery<DialogueProgress[]>({
+    queryKey: ["dialogue-progress", 1], // TODO: Replace with actual userId
+    queryFn: async () => {
+      const response = await fetch("/api/dialogue-progress/1"); // TODO: Replace with actual userId
+      return response.json();
+    },
+  });
+
+  // Update progress mutation
+  const progressMutation = useMutation({
+    mutationFn: async (data: { 
+      conversationId: number; 
+      linesCompleted: number;
+      completed: boolean;
+    }) => {
+      const response = await fetch("/api/dialogue-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: 1, // TODO: Replace with actual userId
+          ...data,
+        }),
+      });
       return response.json();
     },
   });
@@ -50,6 +102,18 @@ const Dialogue = () => {
       audio.onended = () => {
         setIsPlaying(prev => ({ ...prev, [id]: false }));
         setPlayingAudio(prev => ({ ...prev, [id]: null }));
+        // Mark this line as practiced
+        setPracticeProgress(prev => ({ ...prev, [id]: true }));
+        
+        // Update progress in the database
+        if (currentConversation) {
+          const practiced = Object.values(practiceProgress).filter(Boolean).length;
+          progressMutation.mutate({
+            conversationId: parseInt(currentConversation),
+            linesCompleted: practiced,
+            completed: practiced === (dialogue?.length ?? 0),
+          });
+        }
       };
     }
   };
@@ -73,6 +137,17 @@ const Dialogue = () => {
   const speakers = dialogue ? Array.from(new Set(dialogue.map(d => d.speaker))) : [];
   const [takeshi, mary] = speakers as DialogueContent["speaker"][];
 
+  // Calculate progress
+  const currentProgress = progress?.find(p => 
+    p.conversationId === parseInt(currentConversation ?? "0")
+  );
+  const totalLines = dialogue?.length ?? 0;
+  const completedLines = currentProgress?.linesCompleted ?? 0;
+
+  const selectedConversation = conversations?.find(
+    c => c.id.toString() === currentConversation
+  );
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -82,7 +157,29 @@ const Dialogue = () => {
         </p>
       </div>
 
-      <ProgressBar value={1} max={5} />
+      {/* Conversation Selector */}
+      <div className="mx-auto w-72">
+        <Select
+          value={currentConversation}
+          onValueChange={setCurrentConversation}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select conversation" />
+          </SelectTrigger>
+          <SelectContent>
+            {conversations?.map((conversation) => (
+              <SelectItem key={conversation.id} value={conversation.id.toString()}>
+                {conversation.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <ProgressBar 
+        value={completedLines} 
+        max={totalLines} 
+      />
 
       {/* Situation Description Card */}
       <Card className="bg-muted/30 p-6">
@@ -91,7 +188,7 @@ const Dialogue = () => {
           <div>
             <h2 className="text-xl font-semibold">Situation</h2>
             <p className="mt-2 text-muted-foreground leading-relaxed">
-              Setting: First day of college. Takeshi meets Mary, an exchange student from America, in the classroom.
+              {selectedConversation?.description}
             </p>
           </div>
         </div>
