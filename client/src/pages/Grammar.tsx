@@ -8,6 +8,9 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import ProgressBar from "@/components/ProgressBar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import GrammarLesson from "@/components/GrammarLesson";
+import GrammarPractice from "@/components/GrammarPractice";
 import type { Lesson } from "@db/schema";
 
 interface GrammarPoint extends Lesson {
@@ -53,11 +56,30 @@ const Grammar = () => {
       <div className="text-center">
         <h1 className="text-4xl font-bold">Grammar</h1>
         <p className="mt-2 text-muted-foreground">
-          Understanding the building blocks of Japanese
+          Master Japanese grammar through learning and practice
         </p>
       </div>
 
-      <ProgressBar value={2} max={5} />
+      <Tabs defaultValue="learn" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="learn">Learn</TabsTrigger>
+          <TabsTrigger value="practice">Practice</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="learn">
+          <Card className="p-6">
+            <GrammarLesson />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="practice">
+          <Card className="p-6">
+            <GrammarPractice />
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* <ProgressBar value={2} max={5} />
 
       <Accordion type="single" collapsible className="w-full">
         {uniquePoints?.map((point) => (
@@ -100,7 +122,7 @@ const Grammar = () => {
       <div className="flex justify-center space-x-4">
         <Button variant="outline">Previous Point</Button>
         <Button>Next Point</Button>
-      </div>
+      </div> */}
     </div>
   );
 };
