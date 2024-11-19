@@ -3,21 +3,21 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
   progress: integer("progress").default(0).notNull()
 });
 
 export const conversations = pgTable("conversations", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   order: integer("order").notNull()
 });
 
 export const lessons = pgTable("lessons", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   section: text("section").notNull(), // dialogue, vocabulary, grammar, practice, culture
   category: text("category"), // For vocabulary categories
   conversationId: integer("conversation_id").references(() => conversations.id),
@@ -29,7 +29,7 @@ export const lessons = pgTable("lessons", {
 });
 
 export const progress = pgTable("progress", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id").notNull().references(() => users.id),
   lessonId: integer("lesson_id").notNull().references(() => lessons.id),
   completed: boolean("completed").default(false).notNull(),
@@ -38,7 +38,7 @@ export const progress = pgTable("progress", {
 });
 
 export const dialogueProgress = pgTable("dialogue_progress", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id").notNull().references(() => users.id),
   conversationId: integer("conversation_id").notNull().references(() => conversations.id),
   linesCompleted: integer("lines_completed").default(0).notNull(),
