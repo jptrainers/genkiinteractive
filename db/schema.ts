@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -26,7 +26,9 @@ export const lessons = pgTable("lessons", {
   translation: text("translation"),
   furigana: text("furigana"),
   audioUrl: text("audio_url")
-});
+}, (table) => ({
+  conversationIdx: index("lesson_conversation_idx").on(table.conversationId)
+}));
 
 export const progress = pgTable("progress", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -35,7 +37,10 @@ export const progress = pgTable("progress", {
   completed: boolean("completed").default(false).notNull(),
   score: integer("score"),
   lastAttempt: timestamp("last_attempt").defaultNow()
-});
+}, (table) => ({
+  userIdx: index("progress_user_idx").on(table.userId),
+  lessonIdx: index("progress_lesson_idx").on(table.lessonId)
+}));
 
 export const dialogueProgress = pgTable("dialogue_progress", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -44,7 +49,10 @@ export const dialogueProgress = pgTable("dialogue_progress", {
   linesCompleted: integer("lines_completed").default(0).notNull(),
   completed: boolean("completed").default(false).notNull(),
   lastAttempt: timestamp("last_attempt").defaultNow()
-});
+}, (table) => ({
+  userIdx: index("dialogue_progress_user_idx").on(table.userId),
+  conversationIdx: index("dialogue_progress_conversation_idx").on(table.conversationId)
+}));
 
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
