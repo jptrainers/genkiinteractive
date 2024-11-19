@@ -2,6 +2,7 @@ import { pgTable, text, integer, timestamp, boolean, index } from "drizzle-orm/p
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define users table first since it's referenced by other tables
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   username: text("username").unique().notNull(),
@@ -9,6 +10,7 @@ export const users = pgTable("users", {
   progress: integer("progress").default(0).notNull()
 });
 
+// Define conversations table before it's referenced by lessons
 export const conversations = pgTable("conversations", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   title: text("title").notNull(),
@@ -16,6 +18,7 @@ export const conversations = pgTable("conversations", {
   order: integer("order").notNull()
 });
 
+// Define lessons table with proper references to conversations
 export const lessons = pgTable("lessons", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   section: text("section").notNull(), // dialogue, vocabulary, grammar, practice, culture
@@ -30,10 +33,11 @@ export const lessons = pgTable("lessons", {
   conversationIdx: index("lesson_conversation_idx").on(table.conversationId)
 }));
 
+// Define progress table with references to users and lessons
 export const progress = pgTable("progress", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  lessonId: integer("lesson_id").references(() => lessons.id).notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  lessonId: integer("lesson_id").notNull().references(() => lessons.id),
   completed: boolean("completed").default(false).notNull(),
   score: integer("score"),
   lastAttempt: timestamp("last_attempt").defaultNow()
@@ -42,10 +46,11 @@ export const progress = pgTable("progress", {
   lessonIdx: index("progress_lesson_idx").on(table.lessonId)
 }));
 
+// Define dialogueProgress table with references to users and conversations
 export const dialogueProgress = pgTable("dialogue_progress", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  conversationId: integer("conversation_id").references(() => conversations.id).notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
   linesCompleted: integer("lines_completed").default(0).notNull(),
   completed: boolean("completed").default(false).notNull(),
   lastAttempt: timestamp("last_attempt").defaultNow()
