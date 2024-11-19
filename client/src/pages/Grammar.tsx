@@ -10,19 +10,43 @@ import { Button } from "@/components/ui/button";
 import ProgressBar from "@/components/ProgressBar";
 import type { Lesson } from "@db/schema";
 
+interface GrammarPoint extends Lesson {
+  type?: "main" | "example" | "particle" | "note";
+}
+
 const Grammar = () => {
   const { data: grammarPoints, isLoading } = useQuery({
     queryKey: ["lessons", "grammar"],
     queryFn: async () => {
       const response = await fetch("/api/lessons/grammar");
-      const data = await response.json() as Lesson[];
-      return data;
+      const data = await response.json() as GrammarPoint[];
+      
+      // Group related grammar points by their main concept
+      const groupedPoints = data.reduce((acc: Record<string, GrammarPoint[]>, point) => {
+        const mainConcept = point.title.split(' ')[0]; // Group by first word (e.g., は, です)
+        if (!acc[mainConcept]) {
+          acc[mainConcept] = [];
+        }
+        acc[mainConcept].push(point);
+        return acc;
+      }, {});
+
+      return Object.values(groupedPoints).flat();
     },
   });
 
   if (isLoading) {
     return <div>Loading grammar points...</div>;
   }
+
+  // Group points by their main concept (XはYです, は particle)
+  const uniquePoints = grammarPoints?.reduce((acc: GrammarPoint[], point) => {
+    const exists = acc.find(p => p.title === point.title);
+    if (!exists) {
+      acc.push(point);
+    }
+    return acc;
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -36,7 +60,7 @@ const Grammar = () => {
       <ProgressBar value={2} max={5} />
 
       <Accordion type="single" collapsible className="w-full">
-        {grammarPoints?.map((point) => (
+        {uniquePoints?.map((point) => (
           <AccordionItem key={point.id} value={`item-${point.id}`}>
             <AccordionTrigger className="text-lg font-semibold">
               {point.title}
@@ -51,7 +75,7 @@ const Grammar = () => {
                   
                   {point.furigana && (
                     <div>
-                      <h3 className="text-lg font-medium">Reading</h3>
+                      <h3 className="text-lg font-medium">Examples</h3>
                       <p className="text-sm text-muted-foreground">
                         {point.furigana}
                       </p>
