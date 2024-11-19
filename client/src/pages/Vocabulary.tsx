@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Flashcard from "@/components/Flashcard";
 import ProgressBar from "@/components/ProgressBar";
@@ -11,10 +18,24 @@ interface VocabWord {
   content: string;
   translation: string;
   furigana: string;
+  category?: string;
 }
+
+const categories = [
+  "All",
+  "School Terms",
+  "Person Terms",
+  "Time Terms",
+  "Countries",
+  "Majors",
+  "Occupations",
+  "Family",
+];
 
 const Vocabulary = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [filteredVocabulary, setFilteredVocabulary] = useState<VocabWord[]>([]);
 
   const { data: vocabulary, isLoading } = useQuery({
     queryKey: ["lessons", "vocabulary"],
@@ -24,8 +45,18 @@ const Vocabulary = () => {
     },
   });
 
+  useEffect(() => {
+    if (vocabulary) {
+      const filtered = selectedCategory === "All"
+        ? vocabulary
+        : vocabulary.filter((word: VocabWord) => word.category === selectedCategory);
+      setFilteredVocabulary(filtered);
+      setCurrentIndex(0); // Reset index when category changes
+    }
+  }, [selectedCategory, vocabulary]);
+
   const handleNext = () => {
-    if (vocabulary && currentIndex < vocabulary.length - 1) {
+    if (filteredVocabulary && currentIndex < filteredVocabulary.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
@@ -34,6 +65,10 @@ const Vocabulary = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
   };
 
   if (isLoading) {
@@ -49,9 +84,27 @@ const Vocabulary = () => {
         </p>
       </div>
 
+      <div className="mx-auto w-72">
+        <Select
+          value={selectedCategory}
+          onValueChange={handleCategoryChange}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <ProgressBar 
         value={currentIndex + 1} 
-        max={vocabulary?.length || 1} 
+        max={filteredVocabulary?.length || 1} 
       />
 
       <div className="flex items-center justify-center space-x-4">
@@ -65,11 +118,11 @@ const Vocabulary = () => {
         </Button>
 
         <div className="w-96">
-          {vocabulary && vocabulary[currentIndex] && (
+          {filteredVocabulary && filteredVocabulary[currentIndex] && (
             <Flashcard
-              front={vocabulary[currentIndex].content}
-              back={vocabulary[currentIndex].translation}
-              furigana={vocabulary[currentIndex].furigana}
+              front={filteredVocabulary[currentIndex].content}
+              back={filteredVocabulary[currentIndex].translation}
+              furigana={filteredVocabulary[currentIndex].furigana}
             />
           )}
         </div>
@@ -78,7 +131,7 @@ const Vocabulary = () => {
           variant="outline"
           size="icon"
           onClick={handleNext}
-          disabled={!vocabulary || currentIndex === vocabulary.length - 1}
+          disabled={!filteredVocabulary || currentIndex === filteredVocabulary.length - 1}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

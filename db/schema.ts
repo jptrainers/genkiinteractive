@@ -12,6 +12,7 @@ export const users = pgTable("users", {
 export const lessons = pgTable("lessons", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   section: text("section").notNull(), // dialogue, vocabulary, grammar, practice, culture
+  category: text("category"), // For vocabulary categories
   title: text("title").notNull(),
   content: text("content").notNull(),
   translation: text("translation"),
