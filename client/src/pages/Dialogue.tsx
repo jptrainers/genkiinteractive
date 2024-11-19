@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, Volume2, Languages } from "lucide-react";
+import { Play, Pause, Volume2, Languages, User2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProgressBar from "@/components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface DialogueContent {
   id: number;
@@ -14,6 +15,8 @@ interface DialogueContent {
   translation: string;
   furigana: string;
   audioUrl: string;
+  imageUrl?: string;
+  speaker: string;
 }
 
 const Dialogue = () => {
@@ -97,15 +100,47 @@ const Dialogue = () => {
                 index === dialogue.length - 1 && "pb-0"
               )}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-16 w-16 flex-shrink-0">
+                  <AvatarImage
+                    src={content.imageUrl}
+                    alt={`${content.speaker}'s profile`}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="bg-primary/10">
+                    <User2 className="h-8 w-8 text-primary" />
+                  </AvatarFallback>
+                </Avatar>
+
                 <div className="flex-1 space-y-2">
-                  <div className="space-y-1">
-                    <p className="text-2xl font-medium leading-relaxed">
-                      {content.content}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {content.furigana}
-                    </p>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {content.speaker}
+                      </p>
+                      <p className="text-2xl font-medium leading-relaxed">
+                        {content.content}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {content.furigana}
+                      </p>
+                    </div>
+
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      className={cn(
+                        "h-14 w-14 rounded-full transition-all",
+                        isPlaying[content.id] && "bg-primary text-primary-foreground hover:bg-primary/90"
+                      )}
+                      onClick={() => handlePlayback(content.id, content.audioUrl)}
+                    >
+                      {isPlaying[content.id] ? (
+                        <Pause className="h-6 w-6" />
+                      ) : (
+                        <Play className="h-6 w-6" />
+                      )}
+                    </Button>
                   </div>
                   
                   {/* Translation toggle and text */}
@@ -125,22 +160,6 @@ const Dialogue = () => {
                     )}
                   </div>
                 </div>
-
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className={cn(
-                    "h-14 w-14 rounded-full transition-all",
-                    isPlaying[content.id] && "bg-primary text-primary-foreground hover:bg-primary/90"
-                  )}
-                  onClick={() => handlePlayback(content.id, content.audioUrl)}
-                >
-                  {isPlaying[content.id] ? (
-                    <Pause className="h-6 w-6" />
-                  ) : (
-                    <Play className="h-6 w-6" />
-                  )}
-                </Button>
               </div>
             </div>
           ))}
