@@ -32,8 +32,8 @@ export const lessons = pgTable("lessons", {
 
 export const progress = pgTable("progress", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  lessonId: integer("lesson_id").notNull().references(() => lessons.id),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  lessonId: integer("lesson_id").references(() => lessons.id).notNull(),
   completed: boolean("completed").default(false).notNull(),
   score: integer("score"),
   lastAttempt: timestamp("last_attempt").defaultNow()
@@ -44,8 +44,8 @@ export const progress = pgTable("progress", {
 
 export const dialogueProgress = pgTable("dialogue_progress", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  conversationId: integer("conversation_id").references(() => conversations.id).notNull(),
   linesCompleted: integer("lines_completed").default(0).notNull(),
   completed: boolean("completed").default(false).notNull(),
   lastAttempt: timestamp("last_attempt").defaultNow()
@@ -54,6 +54,7 @@ export const dialogueProgress = pgTable("dialogue_progress", {
   conversationIdx: index("dialogue_progress_conversation_idx").on(table.conversationId)
 }));
 
+// Zod schemas for type safety and validation
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertLessonSchema = createInsertSchema(lessons);
@@ -65,6 +66,7 @@ export const selectConversationSchema = createSelectSchema(conversations);
 export const insertDialogueProgressSchema = createInsertSchema(dialogueProgress);
 export const selectDialogueProgressSchema = createSelectSchema(dialogueProgress);
 
+// TypeScript type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = z.infer<typeof selectUserSchema>;
 export type Lesson = z.infer<typeof selectLessonSchema>;
