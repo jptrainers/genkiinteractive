@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, Volume2, Languages, User2 } from "lucide-react";
+import { Play, Pause, Volume2, Languages, User2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProgressBar from "@/components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
@@ -17,7 +17,7 @@ interface DialogueContent {
   furigana: string;
   audioUrl: string;
   imageUrl?: string;
-  speaker: string;
+  speaker: "Takeshi" | "Mary" | "タケシ" | "メアリー";
 }
 
 const Dialogue = () => {
@@ -25,7 +25,7 @@ const Dialogue = () => {
   const [isPlaying, setIsPlaying] = useState<Record<number, boolean>>({});
   const [showTranslations, setShowTranslations] = useState<Record<number, boolean>>({});
 
-  const { data: dialogue, isLoading } = useQuery({
+  const { data: dialogue, isLoading } = useQuery<DialogueContent[]>({
     queryKey: ["lessons", "dialogue"],
     queryFn: async () => {
       const response = await fetch("/api/lessons/dialogue");
@@ -69,9 +69,9 @@ const Dialogue = () => {
     return <div>Loading dialogue...</div>;
   }
 
-  // Find unique speakers
-  const speakers = dialogue ? Array.from(new Set(dialogue.map((d: DialogueContent) => d.speaker))) : [];
-  const [takeshi, mary] = speakers;
+  // Find unique speakers and ensure they're properly typed
+  const speakers = dialogue ? Array.from(new Set(dialogue.map(d => d.speaker))) : [];
+  const [takeshi, mary] = speakers as DialogueContent["speaker"][];
 
   return (
     <div className="space-y-8">
@@ -84,13 +84,26 @@ const Dialogue = () => {
 
       <ProgressBar value={1} max={5} />
 
+      {/* Situation Description Card */}
+      <Card className="bg-muted/30 p-6">
+        <div className="flex items-start gap-4">
+          <Info className="mt-1 h-5 w-5 text-primary" />
+          <div>
+            <h2 className="text-xl font-semibold">Situation</h2>
+            <p className="mt-2 text-muted-foreground leading-relaxed">
+              Setting: First day of college. Takeshi meets Mary, an exchange student from America, in the classroom.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <Card className="overflow-hidden">
         {/* Speakers Header */}
         <div className="flex items-center justify-between border-b bg-muted/30 p-6">
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20 ring-2 ring-primary ring-offset-2">
               <AvatarImage
-                src={dialogue?.find((d: DialogueContent) => d.speaker === takeshi)?.imageUrl}
+                src={dialogue?.find(d => d.speaker === takeshi)?.imageUrl}
                 alt={`${takeshi}'s profile`}
                 className="object-cover"
               />
@@ -111,7 +124,7 @@ const Dialogue = () => {
             </div>
             <Avatar className="h-20 w-20 ring-2 ring-primary ring-offset-2">
               <AvatarImage
-                src={dialogue?.find((d: DialogueContent) => d.speaker === mary)?.imageUrl}
+                src={dialogue?.find(d => d.speaker === mary)?.imageUrl}
                 alt={`${mary}'s profile`}
                 className="object-cover"
               />
@@ -137,7 +150,7 @@ const Dialogue = () => {
 
         <div className="divide-y p-6">
           <AnimatePresence>
-            {dialogue?.map((content: DialogueContent, index: number) => (
+            {dialogue?.map((content, index) => (
               <motion.div
                 key={content.id}
                 initial={{ opacity: 0, y: 20 }}
